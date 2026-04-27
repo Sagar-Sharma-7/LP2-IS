@@ -1,16 +1,21 @@
-msg = input("Enter 128-bit plaintext (0/1 only): ").strip()
-key = input("Enter 128-bit key (0/1 only): ").strip()
+msg = input("Enter 32-digit hexadecimal plaintext: ").strip().upper()
+key = input("Enter 32-digit hexadecimal key: ").strip().upper()
 
-print(len(msg), len(key))
+HEX = "0123456789ABCDEF"
 
-if len(msg) != 128 or len(key) != 128:
-    print("Both plaintext and key must be exactly 128 bits")
+if len(msg) != 32 or len(key) != 32:
+    print("Both plaintext and key must be exactly 32 hexadecimal digits")
     exit()
 
-def bin_to_bytes(bits):
+for ch in msg + key:
+    if ch not in HEX:
+        print("Use only hexadecimal characters: 0-9, A-F")
+        exit()
+
+def hex_to_bytes(text):
     arr = []
-    for i in range(0, 128, 8):
-        arr.append(int(bits[i:i+8], 2))
+    for i in range(0, 32, 2):
+        arr.append(int(text[i:i+2], 16))
     return arr
 
 def bytes_to_matrix(data):
@@ -66,10 +71,10 @@ def mix_columns(state):
         state[2][j] = a[0]^a[1]^gmul(a[2],2)^gmul(a[3],3)
         state[3][j] = gmul(a[0],3)^a[1]^a[2]^gmul(a[3],2)
 
-def add_round_key(state,key):
+def add_round_key(state,keym):
     for i in range(4):
         for j in range(4):
-            state[i][j] ^= key[i][j]
+            state[i][j] ^= keym[i][j]
 
 def rotate(word):
     return word[1:] + word[:1]
@@ -89,7 +94,6 @@ def key_expansion(key_state):
         if i % 4 == 0:
             temp = sub_word(rotate(temp))
             temp[0] ^= RCON[(i//4)-1]
-
         words.append([words[i-4][j]^temp[j] for j in range(4)])
 
     round_keys = []
@@ -108,8 +112,8 @@ def matrix_to_hex(state):
             out += hex(val)[2:].zfill(2).upper()
     return out
 
-state = bytes_to_matrix(bin_to_bytes(msg))
-key_state = bytes_to_matrix(bin_to_bytes(key))
+state = bytes_to_matrix(hex_to_bytes(msg))
+key_state = bytes_to_matrix(hex_to_bytes(key))
 
 round_keys = key_expansion(key_state)
 
@@ -127,9 +131,7 @@ add_round_key(state, round_keys[10])
 
 print("Ciphertext (Hex):", matrix_to_hex(state))
 
-#input for test
-# Enter 128-bit plaintext (0/1 only):
-# 00010010001101000101011001111000100110101011110011011110111100010001001000110100010101100111100010011010101111001101111011110001
-
-# Enter 128-bit key (0/1 only):
-# 11110000111100001111000011110000111100001111000011110000111100001111000011110000111100001111000011110000111100001111000011110000
+#Enter 32-digit hexadecimal plaintext:
+#00112233445566778899AABBCCDDEEFF
+#Enter 32-digit hexadecimal key:
+#000102030405060708090A0B0C0D0E0F
